@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Css js Clock</title>
+    <style>
+        body {
+            background-size: cover;
+            background-image: url("https://images.pexels.com/photos/206359/pexels-photo-206359.jpeg?cs=srgb&dl=pexels-pixabay-206359.jpg&fm=jpg");
+            background-repeat: no-repeat;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative; 
+        }
+
+        .circle {
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            border: 10px solid white;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute; 
+            top: 50%;
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+        }
+        .line {
+            position: absolute;
+            transform-origin: right center; 
+            transition: transform 0s ease-in-out; 
+        }
+        .sline {
+            width: 150px;
+            height: 4px;
+            background-color: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-150px, -50%) rotate(var(--rotation, 0deg)); 
+        }
+        .mline {
+            width: 150px;
+            height: 7px;
+            background-color: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-150px, -50%) rotate(var(--rotation, 0deg)); 
+        }
+        .hline {
+            width: 100px;
+            height: 10px;
+            background-color: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-100px, -50%) rotate(var(--rotation, 0deg)); 
+        }
+        .dig {
+            font-size: 24px;
+            color: white;
+            text-align: center;
+            margin-top: 20px;
+            position: absolute; 
+            top: calc(50% + 190px);
+            left: 50%;
+            transform: translateX(-50%); 
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+        }
+        .input-container {
+            text-align: center;
+            position: absolute; 
+            top: calc(50% + 250px);
+        }
+        .unit-select {
+            margin-top: 10px;
+        }
+        .timer-container {
+            text-align: center;
+            color: rgb(255, 255, 255);
+            position: absolute; 
+            right: 0%;
+            top: 0%;
+        }
+    </style>
+</head>
+<body>
+    <div class="circle">
+        <div class="line sline"></div>
+        <div class="line mline"></div>
+        <div class="line hline"></div>
+        <div class="dot"></div>
+    </div>
+    <div class="dig" id="digC"></div>
+    <div class="input-container">
+        <input type="number" id="inputTime" placeholder="Enter time">
+        <select id="timeUnit" class="unit-select">
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours">Hours</option>
+        </select>
+        <button onclick="addTimer()">Add Timer</button>
+    </div>
+    <div class="timer-container" id="timerContainer">
+        <!-- Timer items will be dynamically added here -->
+    </div>
+    <audio id="audio" src="bell.mp3" preload="auto"></audio>
+    
+    <script>
+        let timers = [];
+
+        function updateClock(){
+            const now = new Date();
+            const hr = now.getHours();
+            const min = now.getMinutes();
+            const sec = now.getSeconds();
+
+            const hline = document.querySelector('.hline');
+            const hAngle = ((hr) / 12) * 360 + 90; 
+            hline.style.setProperty('--rotation', `${hAngle}deg`);
+
+            const mline = document.querySelector('.mline');
+            const mAngle = (min / 60) * 360 + 90; 
+            mline.style.setProperty('--rotation', `${mAngle}deg`);
+
+            const sline = document.querySelector('.sline');
+            const sAngle = (sec / 60) * 360 + 90; 
+            sline.style.setProperty('--rotation', `${sAngle}deg`);
+
+            const digi = document.getElementById('digC');
+            digi.textContent = `${formatTime(hr)}:${formatTime(min)}:${formatTime(sec)}`;
+        }
+
+        function formatTime(time) {
+            return time < 10 ? `0${time}` : time;
+        }
+
+        function addTimer() {
+            const time = parseInt(document.getElementById('inputTime').value);
+            const unit = document.getElementById('timeUnit').value;
+            if (!isNaN(time)) {
+                let milliseconds = 0;
+                if (unit === 'seconds') {
+                    milliseconds = time * 1000;
+                } else if (unit === 'minutes') {
+                    milliseconds = time * 60 * 1000;
+                } else if (unit === 'hours') {
+                    milliseconds = time * 60 * 60 * 1000;
+                }
+                const timerId = setTimeout(() => {
+                    playSound();
+                    removeTimer(timerId);
+                }, milliseconds);
+                timers.push({ id: timerId, time: new Date(Date.now() + milliseconds)});
+                renderTimers();
+            }
+        }
+
+        function removeTimer(timerId) {
+            const index = timers.findIndex(timer => timer.id === timerId);
+            if (index !== -1) {
+                clearTimeout(timerId);
+                timers.splice(index, 1);
+                renderTimers();
+            }
+        }
+
+        function playSound() {
+            const audio = document.getElementById('audio');
+            audio.play();
+        }
+
+        function renderTimers() {
+            const timerContainer = document.getElementById('timerContainer');
+            timerContainer.innerHTML = ''; // Clear existing timers
+
+            timers.forEach(timer => {
+                const timerItem = document.createElement('div');
+                timerItem.textContent = `Timer will play at: ${formatTime(timer.time.getHours())}:${formatTime(timer.time.getMinutes())}:${formatTime(timer.time.getSeconds())}`;
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = () => removeTimer(timer.id);
+                timerItem.appendChild(removeButton);
+                timerContainer.appendChild(timerItem);
+            });
+        }
+
+        setInterval(updateClock, 1000); 
+        updateClock(); 
+    </script>
+</body>
+</html>
